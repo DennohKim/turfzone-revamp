@@ -589,6 +589,7 @@ pub fn build_admin_verify_manager_response(
 pub fn route_manifest() -> Value {
     json!({
         "auth": ["POST /api/auth/register", "POST /api/auth/login", "POST /api/auth/logout", "GET /api/auth/me", "POST /api/auth/change-password", "POST /api/auth/verify-email", "POST /api/auth/resend-verification", "POST /api/auth/password-forgot", "POST /api/auth/password-reset"],
+        "oauth": ["GET /oauth/providers", "GET /oauth/google/login", "GET /oauth/google/connect", "GET /oauth/google/callback", "POST /oauth/google/disconnect"],
         "discovery": ["POST /api/discovery/search", "GET /api/venue/", "GET /api/venue/:id"],
         "availability": ["POST /api/fields/availability"],
         "booking": ["POST /api/bookings/hold", "POST /api/bookings/cancellation-quote"],

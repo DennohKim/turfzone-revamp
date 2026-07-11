@@ -15,8 +15,13 @@ Rust/Umbral backend for the Turfzone turf and court booking marketplace.
 
 ```bash
 cp .env.example .env
+cargo run -- migrate
 cargo run
 ```
+
+Google sign-in uses the official `umbral-oauth` plugin. Set the Google OAuth and mask-key variables documented in `.env.example`, then register `http://127.0.0.1:8000/oauth/google/callback` in Google Cloud for local development.
+
+Password registration requires email verification. Production email is delivered through Resend when `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are configured. Dev/Test falls back to Umbral's console mailer; non-Dev startup fails when Resend is not configured.
 
 ## Validate
 
@@ -31,6 +36,7 @@ The core booking, wallet, and payment rules are intentionally implemented behind
 
 - `docs/ARCHITECTURE.md` - module boundaries and ownership rules.
 - `docs/API.md` - generated CRUD and custom workflow route map.
+- `docs/FRONTEND_AUTH_SPEC.md` - security-first Next.js authentication contract.
 - `docs/INVARIANTS.md` - booking, wallet, payment, payout, and notification rules.
 - `docs/DEVELOPMENT.md` - development workflow and maintainability checklist.
 - `UMBRAL_FRICTION_LOG.md` - framework gaps, workarounds, and verification notes.

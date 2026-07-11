@@ -154,7 +154,7 @@ pub struct ManagerProfile {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, umbral::orm::Model)]
-#[umbral(unique_together = [["manager_id", "staff_user_id"]])]
+#[umbral(unique_together = [["manager", "staff_user"]])]
 pub struct StaffMembership {
     pub id: i64,
     pub manager: ForeignKey<ManagerProfile>,
@@ -194,7 +194,7 @@ pub struct Amenity {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, umbral::orm::Model)]
-#[umbral(unique_together = [["venue_id", "amenity_id"]])]
+#[umbral(unique_together = [["venue", "amenity"]])]
 pub struct VenueAmenity {
     pub id: i64,
     pub venue: ForeignKey<Venue>,
@@ -232,7 +232,7 @@ pub struct FieldImage {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, umbral::orm::Model)]
-#[umbral(unique_together = [["field_id", "weekday"]])]
+#[umbral(unique_together = [["field", "weekday"]])]
 pub struct OpeningHours {
     pub id: i64,
     pub field: ForeignKey<Field>,
@@ -242,7 +242,7 @@ pub struct OpeningHours {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, umbral::orm::Model)]
-#[umbral(unique_together = [["field_id", "date"]])]
+#[umbral(unique_together = [["field", "date"]])]
 pub struct AvailabilityException {
     pub id: i64,
     pub field: ForeignKey<Field>,
@@ -253,7 +253,7 @@ pub struct AvailabilityException {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, umbral::orm::Model)]
-#[umbral(unique_together = [["field_id", "date", "start_time"]])]
+#[umbral(unique_together = [["field", "date", "start_time"]])]
 pub struct Booking {
     pub id: Uuid,
     pub field: ForeignKey<Field>,

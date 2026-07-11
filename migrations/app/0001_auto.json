@@ -744,8 +744,8 @@
       ],
       "unique_together": [
         [
-          "manager_id",
-          "staff_user_id"
+          "manager",
+          "staff_user"
         ]
       ]
     },
@@ -1185,8 +1185,8 @@
       ],
       "unique_together": [
         [
-          "venue_id",
-          "amenity_id"
+          "venue",
+          "amenity"
         ]
       ]
     },
@@ -1258,7 +1258,7 @@
       ],
       "unique_together": [
         [
-          "field_id",
+          "field",
           "date"
         ]
       ]
@@ -1441,7 +1441,7 @@
       ],
       "unique_together": [
         [
-          "field_id",
+          "field",
           "date",
           "start_time"
         ]
@@ -1562,7 +1562,7 @@
       ],
       "unique_together": [
         [
-          "field_id",
+          "field",
           "weekday"
         ]
       ]
@@ -1957,7 +1957,7 @@
         "icon": "database",
         "unique_together": [
           [
-            "field_id",
+            "field",
             "date"
           ]
         ],
@@ -2143,7 +2143,7 @@
         "icon": "database",
         "unique_together": [
           [
-            "field_id",
+            "field",
             "date",
             "start_time"
           ]
@@ -2716,7 +2716,7 @@
         "icon": "database",
         "unique_together": [
           [
-            "field_id",
+            "field",
             "weekday"
           ]
         ],
@@ -3285,8 +3285,8 @@
         "icon": "database",
         "unique_together": [
           [
-            "manager_id",
-            "staff_user_id"
+            "manager",
+            "staff_user"
           ]
         ],
         "app_label": "app"
@@ -3571,8 +3571,8 @@
         "icon": "database",
         "unique_together": [
           [
-            "venue_id",
-            "amenity_id"
+            "venue",
+            "amenity"
           ]
         ],
         "app_label": "app"

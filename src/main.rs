@@ -1,4 +1,5 @@
 use turfzone::authz::StaffOrSuperuserReadOnly;
+use turfzone::mailer::ResendMailer;
 use turfzone::models::{
     Amenity, AvailabilityException, Booking, Field, FieldImage, ManagerProfile, Notification,
     OpeningHours, Payment, Payout, PaystackSubaccount, Refund, StaffMembership, UserProfile, Venue,
@@ -8,6 +9,7 @@ use umbral::prelude::*;
 use umbral_admin::AdminPlugin;
 use umbral_auth::{AuthPlugin, AuthUser, BearerAuthentication};
 use umbral_health::HealthPlugin;
+use umbral_oauth::{OAuthPlugin, providers::GoogleProvider};
 use umbral_permissions::PermissionsPlugin;
 use umbral_security::{SecurityConfig, SecurityPlugin};
 use umbral_sessions::SessionsPlugin;
@@ -15,6 +17,7 @@ use umbral_tasks::TasksPlugin;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    dotenvy::dotenv().ok();
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -25,6 +28,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let _turfzone_settings = turfzone::TurfzoneSettings::from_env();
     let settings = Settings::from_env()?;
     let pool = umbral::db::connect(&settings.database_url).await?;
+    let require_mailer = !matches!(settings.environment, Environment::Dev | Environment::Test);
+    let mut auth = AuthPlugin::<AuthUser>::default()
+        .with_default_routes()
+        .require_verified_email();
+    if let Some(mailer) = ResendMailer::from_env(require_mailer)? {
+        tracing::info!("Resend auth mailer configured");
+        auth = auth.mailer(mailer);
+    }
+    let public_origin = std::env::var("UMBRAL_OAUTH_PUBLIC_ORIGIN")
+        .unwrap_or_else(|_| "http://127.0.0.1:8000".to_owned());
+    let login_redirect =
+        std::env::var("UMBRAL_OAUTH_LOGIN_REDIRECT").unwrap_or_else(|_| "/".to_owned());
+    let mut oauth = OAuthPlugin::new(public_origin).login_redirect(login_redirect);
+    if let Some(google) = GoogleProvider::from_env() {
+        oauth = oauth.provider(google);
+    }
     let app = App::builder()
         .settings(settings)
         .database("default", pool)
@@ -65,8 +84,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                     turfzone::api::admin_verify_manager,
                 ),
         )
-        .plugin(AuthPlugin::<AuthUser>::default().with_default_routes())
+        .plugin(auth)
         .plugin(SessionsPlugin::default())
+        .plugin(oauth)
         .plugin(PermissionsPlugin::default())
         .plugin(AdminPlugin::default())
         .plugin(TasksPlugin::default())

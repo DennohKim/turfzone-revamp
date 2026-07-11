@@ -1,5 +1,6 @@
 pub mod api;
 pub mod authz;
+pub mod mailer;
 pub mod models;
 pub mod paystack;
 pub mod services;

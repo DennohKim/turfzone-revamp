@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "f95cb77f-b9f7-45e2-b7dc-053742b1e6ea",
     "name": "Turfzone API",
-    "description": "Postman collection for the Turfzone Rust/Umbral backend.\n\nRun Authentication / Login first; its test script stores the returned bearer token in authToken. Protected requests inherit bearer authentication from the collection. Public routes and the Paystack provider webhook explicitly use no authentication.\n\nPlayer workflows require a Player profile role (new auth users without a profile default to Player). Manager setup requires Manager or ManagerStaff. Admin/test-money routes require AuthUser.is_superuser. Generated REST requires auth staff or superuser and permits list/retrieve only.\n\nGenerated REST resource values: user_profile, manager_profile, staff_membership, venue, amenity, venue_amenity, field, field_image, opening_hours, availability_exception, booking, payment, refund, wallet, wallet_transaction, paystack_subaccount, payout, notification.",
+    "description": "Postman collection for the Turfzone Rust/Umbral backend.\n\nRun Authentication / Login first; its test script stores the returned bearer token in authToken. Protected requests inherit bearer authentication from the collection. Public routes and the Paystack provider webhook explicitly use no authentication.\n\nGoogle OAuth is browser-based. Configure UMBRAL_OAUTH_GOOGLE_CLIENT_ID and UMBRAL_OAUTH_GOOGLE_CLIENT_SECRET, then use Google OAuth / Start Google Login in a browser. Provider discovery can be tested directly in Postman.\n\nPlayer workflows require a Player profile role (new auth users without a profile default to Player). Manager setup requires Manager or ManagerStaff. Admin/test-money routes require AuthUser.is_superuser. Generated REST requires auth staff or superuser and permits list/retrieve only.\n\nGenerated REST resource values: user_profile, manager_profile, staff_membership, venue, amenity, venue_amenity, field, field_image, opening_hours, availability_exception, booking, payment, refund, wallet, wallet_transaction, paystack_subaccount, payout, notification.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -45,6 +45,18 @@
       "value": "1",
       "type": "string",
       "description": "Set automatically after login and used as player_id for player-owned requests."
+    },
+    {
+      "key": "oauthCode",
+      "value": "replace-with-google-authorization-code",
+      "type": "string",
+      "description": "Google supplies this short-lived code to the callback; normally do not set it manually."
+    },
+    {
+      "key": "oauthState",
+      "value": "replace-with-session-oauth-state",
+      "type": "string",
+      "description": "Umbral stores this state in the session; normally do not set it manually."
     },
     {
       "key": "resource",
@@ -343,6 +355,106 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "auth", "password-reset"]
             }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Google OAuth",
+      "description": "Google OAuth uses browser redirects, a session cookie, state, and PKCE. Set the Google client credentials on the server and register {{baseUrl}}/oauth/google/callback in Google Cloud. Start login in a browser rather than manually calling the callback.",
+      "auth": {
+        "type": "noauth"
+      },
+      "item": [
+        {
+          "name": "List OAuth Providers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/oauth/providers",
+              "host": ["{{baseUrl}}"],
+              "path": ["oauth", "providers"]
+            },
+            "description": "Lists configured providers. Google appears only when both UMBRAL_OAUTH_GOOGLE_CLIENT_ID and UMBRAL_OAUTH_GOOGLE_CLIENT_SECRET are set."
+          },
+          "response": []
+        },
+        {
+          "name": "Start Google Login",
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/oauth/google/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["oauth", "google", "login"]
+            },
+            "description": "Browser entry point. Returns a redirect to Google and stores OAuth state plus the PKCE verifier in the Umbral session. Open this URL in a browser to complete sign-in."
+          },
+          "response": []
+        },
+        {
+          "name": "Connect Google Account",
+          "protocolProfileBehavior": {
+            "followRedirects": false
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/oauth/google/connect",
+              "host": ["{{baseUrl}}"],
+              "path": ["oauth", "google", "connect"]
+            },
+            "description": "Connects Google to an existing user. Requires an authenticated Umbral cookie session; bearer authentication alone is not sufficient for this browser flow."
+          },
+          "response": []
+        },
+        {
+          "name": "Google Callback Template",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/oauth/google/callback?code={{oauthCode}}&state={{oauthState}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["oauth", "google", "callback"],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "{{oauthCode}}"
+                },
+                {
+                  "key": "state",
+                  "value": "{{oauthState}}"
+                }
+              ]
+            },
+            "description": "Documentation template only. Google calls this with a short-lived code after login. A manually entered code/state will fail because state and PKCE must match the initiating session."
+          },
+          "response": []
+        },
+        {
+          "name": "Disconnect Google Account",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/oauth/google/disconnect",
+              "host": ["{{baseUrl}}"],
+              "path": ["oauth", "google", "disconnect"]
+            },
+            "description": "Disconnects Google from the authenticated user. Requires the browser session and applicable CSRF protection."
           },
           "response": []
         }
