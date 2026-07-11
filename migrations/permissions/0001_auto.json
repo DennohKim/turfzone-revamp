@@ -1,0 +1,453 @@
+{
+  "id": "0001_auto",
+  "plugin": "permissions",
+  "depends_on": [],
+  "operations": [
+    {
+      "kind": "CreateTable",
+      "table": "permissions_contenttype",
+      "columns": [
+        {
+          "name": "id",
+          "ty": "BigInt",
+          "primary_key": true,
+          "nullable": false,
+          "noform": false,
+          "noedit": false,
+          "is_string_repr": false,
+          "max_length": 0
+        },
+        {
+          "name": "app_label",
+          "ty": "Text",
+          "primary_key": false,
+          "nullable": false,
+          "noform": false,
+          "noedit": true,
+          "is_string_repr": false,
+          "max_length": 0
+        },
+        {
+          "name": "model",
+          "ty": "Text",
+          "primary_key": false,
+          "nullable": false,
+          "noform": false,
+          "noedit": true,
+          "is_string_repr": false,
+          "max_length": 0
+        }
+      ],
+      "unique_together": [
+        [
+          "app_label",
+          "model"
+        ]
+      ]
+    },
+    {
+      "kind": "CreateTable",
+      "table": "permissions_group",
+      "columns": [
+        {
+          "name": "id",
+          "ty": "BigInt",
+          "primary_key": true,
+          "nullable": false,
+          "noform": false,
+          "noedit": false,
+          "is_string_repr": false,
+          "max_length": 0
+        },
+        {
+          "name": "name",
+          "ty": "Text",
+          "primary_key": false,
+          "nullable": false,
+          "noform": false,
+          "noedit": false,
+          "is_string_repr": true,
+          "max_length": 150,
+          "unique": true
+        },
+        {
+          "name": "description",
+          "ty": "Text",
+          "primary_key": false,
+          "nullable": true,
+          "noform": false,
+          "noedit": false,
+          "is_string_repr": false,
+          "max_length": 0
+        }
+      ]
+    },
+    {
+      "kind": "CreateTable",
+      "table": "permissions_permission",
+      "columns": [
+        {
+          "name": "codename",
+          "ty": "Text",
+          "primary_key": true,
+          "nullable": false,
+          "noform": false,
+          "noedit": true,
+          "is_string_repr": true,
+          "max_length": 150
+        },
+        {
+          "name": "content_type_id",
+          "ty": "ForeignKey",
+          "primary_key": false,
+          "nullable": false,
+          "fk_target": "permissions_contenttype",
+          "noform": false,
+          "noedit": true,
+          "is_string_repr": false,
+          "max_length": 0,
+          "index": true
+        },
+        {
+          "name": "name",
+          "ty": "Text",
+          "primary_key": false,
+          "nullable": false,
+          "noform": false,
+          "noedit": false,
+          "is_string_repr": false,
+          "max_length": 0
+        }
+      ]
+    },
+    {
+      "kind": "CreateTable",
+      "table": "permissions_usergroup",
+      "columns": [
+        {
+          "name": "id",
+          "ty": "BigInt",
+          "primary_key": true,
+          "nullable": false,
+          "noform": false,
+          "noedit": false,
+          "is_string_repr": false,
+          "max_length": 0
+        },
+        {
+          "name": "user_id",
+          "ty": "Text",
+          "primary_key": false,
+          "nullable": false,
+          "noform": false,
+          "noedit": false,
+          "is_string_repr": false,
+          "max_length": 64,
+          "index": true
+        },
+        {
+          "name": "group_id",
+          "ty": "ForeignKey",
+          "primary_key": false,
+          "nullable": false,
+          "fk_target": "permissions_group",
+          "noform": false,
+          "noedit": false,
+          "is_string_repr": false,
+          "max_length": 0
+        }
+      ],
+      "unique_together": [
+        [
+          "user_id",
+          "group_id"
+        ]
+      ]
+    },
+    {
+      "kind": "CreateTable",
+      "table": "permissions_userpermission",
+      "columns": [
+        {
+          "name": "id",
+          "ty": "BigInt",
+          "primary_key": true,
+          "nullable": false,
+          "noform": false,
+          "noedit": false,
+          "is_string_repr": false,
+          "max_length": 0
+        },
+        {
+          "name": "user_id",
+          "ty": "Text",
+          "primary_key": false,
+          "nullable": false,
+          "noform": false,
+          "noedit": false,
+          "is_string_repr": false,
+          "max_length": 64,
+          "index": true
+        },
+        {
+          "name": "permission_id",
+          "ty": "ForeignKey",
+          "primary_key": false,
+          "nullable": false,
+          "fk_target": "permissions_permission",
+          "noform": false,
+          "noedit": false,
+          "is_string_repr": false,
+          "max_length": 0
+        }
+      ],
+      "unique_together": [
+        [
+          "user_id",
+          "permission_id"
+        ]
+      ]
+    },
+    {
+      "kind": "CreateM2MTable",
+      "junction_table": "permissions_group_permissions",
+      "parent_table": "permissions_group",
+      "parent_col": "id",
+      "child_table": "permissions_permission",
+      "child_col": "codename",
+      "parent_ty": "BigInt",
+      "child_ty": "Text"
+    }
+  ],
+  "snapshot_after": {
+    "models": [
+      {
+        "name": "ContentType",
+        "table": "permissions_contenttype",
+        "fields": [
+          {
+            "name": "id",
+            "ty": "BigInt",
+            "primary_key": true,
+            "nullable": false,
+            "noform": false,
+            "noedit": false,
+            "is_string_repr": false,
+            "max_length": 0
+          },
+          {
+            "name": "app_label",
+            "ty": "Text",
+            "primary_key": false,
+            "nullable": false,
+            "noform": false,
+            "noedit": true,
+            "is_string_repr": false,
+            "max_length": 0
+          },
+          {
+            "name": "model",
+            "ty": "Text",
+            "primary_key": false,
+            "nullable": false,
+            "noform": false,
+            "noedit": true,
+            "is_string_repr": false,
+            "max_length": 0
+          }
+        ],
+        "display": "Content types",
+        "icon": "list",
+        "unique_together": [
+          [
+            "app_label",
+            "model"
+          ]
+        ],
+        "app_label": "app"
+      },
+      {
+        "name": "Group",
+        "table": "permissions_group",
+        "fields": [
+          {
+            "name": "id",
+            "ty": "BigInt",
+            "primary_key": true,
+            "nullable": false,
+            "noform": false,
+            "noedit": false,
+            "is_string_repr": false,
+            "max_length": 0
+          },
+          {
+            "name": "name",
+            "ty": "Text",
+            "primary_key": false,
+            "nullable": false,
+            "noform": false,
+            "noedit": false,
+            "is_string_repr": true,
+            "max_length": 150,
+            "unique": true
+          },
+          {
+            "name": "description",
+            "ty": "Text",
+            "primary_key": false,
+            "nullable": true,
+            "noform": false,
+            "noedit": false,
+            "is_string_repr": false,
+            "max_length": 0
+          }
+        ],
+        "display": "Groups",
+        "icon": "users",
+        "m2m_relations": [
+          {
+            "field_name": "permissions",
+            "target_table": "permissions_permission",
+            "target_name": "Permission"
+          }
+        ],
+        "app_label": "app"
+      },
+      {
+        "name": "Permission",
+        "table": "permissions_permission",
+        "fields": [
+          {
+            "name": "codename",
+            "ty": "Text",
+            "primary_key": true,
+            "nullable": false,
+            "noform": false,
+            "noedit": true,
+            "is_string_repr": true,
+            "max_length": 150
+          },
+          {
+            "name": "content_type_id",
+            "ty": "ForeignKey",
+            "primary_key": false,
+            "nullable": false,
+            "fk_target": "permissions_contenttype",
+            "noform": false,
+            "noedit": true,
+            "is_string_repr": false,
+            "max_length": 0,
+            "index": true
+          },
+          {
+            "name": "name",
+            "ty": "Text",
+            "primary_key": false,
+            "nullable": false,
+            "noform": false,
+            "noedit": false,
+            "is_string_repr": false,
+            "max_length": 0
+          }
+        ],
+        "display": "Permissions",
+        "icon": "key",
+        "app_label": "app"
+      },
+      {
+        "name": "UserGroup",
+        "table": "permissions_usergroup",
+        "fields": [
+          {
+            "name": "id",
+            "ty": "BigInt",
+            "primary_key": true,
+            "nullable": false,
+            "noform": false,
+            "noedit": false,
+            "is_string_repr": false,
+            "max_length": 0
+          },
+          {
+            "name": "user_id",
+            "ty": "Text",
+            "primary_key": false,
+            "nullable": false,
+            "noform": false,
+            "noedit": false,
+            "is_string_repr": false,
+            "max_length": 64,
+            "index": true
+          },
+          {
+            "name": "group_id",
+            "ty": "ForeignKey",
+            "primary_key": false,
+            "nullable": false,
+            "fk_target": "permissions_group",
+            "noform": false,
+            "noedit": false,
+            "is_string_repr": false,
+            "max_length": 0
+          }
+        ],
+        "display": "User groups",
+        "icon": "user-check",
+        "unique_together": [
+          [
+            "user_id",
+            "group_id"
+          ]
+        ],
+        "app_label": "app"
+      },
+      {
+        "name": "UserPermission",
+        "table": "permissions_userpermission",
+        "fields": [
+          {
+            "name": "id",
+            "ty": "BigInt",
+            "primary_key": true,
+            "nullable": false,
+            "noform": false,
+            "noedit": false,
+            "is_string_repr": false,
+            "max_length": 0
+          },
+          {
+            "name": "user_id",
+            "ty": "Text",
+            "primary_key": false,
+            "nullable": false,
+            "noform": false,
+            "noedit": false,
+            "is_string_repr": false,
+            "max_length": 64,
+            "index": true
+          },
+          {
+            "name": "permission_id",
+            "ty": "ForeignKey",
+            "primary_key": false,
+            "nullable": false,
+            "fk_target": "permissions_permission",
+            "noform": false,
+            "noedit": false,
+            "is_string_repr": false,
+            "max_length": 0
+          }
+        ],
+        "display": "User permissions",
+        "icon": "user-cog",
+        "unique_together": [
+          [
+            "user_id",
+            "permission_id"
+          ]
+        ],
+        "app_label": "app"
+      }
+    ]
+  }
+}

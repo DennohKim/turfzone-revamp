@@ -1,0 +1,1131 @@
+{
+  "info": {
+    "_postman_id": "f95cb77f-b9f7-45e2-b7dc-053742b1e6ea",
+    "name": "Turfzone API",
+    "description": "Postman collection for the Turfzone Rust/Umbral backend.\n\nRun Authentication / Login first; its test script stores the returned bearer token in authToken. Protected requests inherit bearer authentication from the collection. Public routes and the Paystack provider webhook explicitly use no authentication.\n\nPlayer workflows require a Player profile role (new auth users without a profile default to Player). Manager setup requires Manager or ManagerStaff. Admin/test-money routes require AuthUser.is_superuser. Generated REST requires auth staff or superuser and permits list/retrieve only.\n\nGenerated REST resource values: user_profile, manager_profile, staff_membership, venue, amenity, venue_amenity, field, field_image, opening_hours, availability_exception, booking, payment, refund, wallet, wallet_transaction, paystack_subaccount, payout, notification.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test(\"Response is not a server error\", function () {",
+          "    pm.expect(pm.response.code).to.be.below(500);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string",
+      "description": "Set automatically after a successful Authentication / Login request."
+    },
+    {
+      "key": "userId",
+      "value": "1",
+      "type": "string",
+      "description": "Set automatically after login and used as player_id for player-owned requests."
+    },
+    {
+      "key": "resource",
+      "value": "venue",
+      "type": "string",
+      "description": "Umbral REST table name. See the collection description for all supported values."
+    },
+    {
+      "key": "resourceId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "resourcePayload",
+      "value": "{\"manager\":1,\"name\":\"Kilimani Sports Arena\",\"description\":\"Five-a-side pitches and courts\",\"address\":\"Ngong Road\",\"city\":\"Nairobi\",\"latitude\":-1.3001,\"longitude\":36.7819,\"is_active\":true,\"cancellation_cutoff_hours\":6}",
+      "type": "string",
+      "description": "JSON object used by generated REST create/replace templates. Change it when changing resource."
+    },
+    {
+      "key": "resourcePatchPayload",
+      "value": "{\"is_active\":true}",
+      "type": "string",
+      "description": "JSON object used by the generated REST partial-update template."
+    },
+    {
+      "key": "paystackSecretKey",
+      "value": "",
+      "type": "string",
+      "description": "Optional. Set this to PAYSTACK_SECRET_KEY to generate a valid test webhook signature."
+    },
+    {
+      "key": "paystackSignature",
+      "value": "replace-with-hmac-sha512-signature",
+      "type": "string"
+    },
+    {
+      "key": "webhookPayload",
+      "value": "{\"event\":\"charge.success\",\"data\":{\"reference\":\"booking-1\",\"amount\":50000,\"currency\":\"KES\",\"channel\":\"mobile_money\"}}",
+      "type": "string"
+    },
+    {
+      "key": "webhookVerifyBody",
+      "value": "{}",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"player1\",\n  \"email\": \"player1@example.com\",\n  \"password\": \"Turfzone!2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Creates an AuthUser. Registration does not log in; call Login next. A user without a UserProfile is treated as a Player by Turfzone authorization."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set(\"authToken\", response.token);",
+                  "    pm.collectionVariables.set(\"userId\", response.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"player1\",\n  \"password\": \"Turfzone!2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Returns a session cookie and bearer token. The test script stores the token for protected collection requests."
+          },
+          "response": []
+        },
+        {
+          "name": "Current User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"Turfzone!2026\",\n  \"new_password\": \"Turfzone!2027\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "change-password"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout Session",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "logout"]
+            },
+            "description": "Clears the session cookie. Umbral logout does not revoke the bearer token stored in authToken."
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"player1@example.com\",\n  \"code\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify-email",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "verify-email"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resend Email Verification",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"player1@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/resend-verification",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "resend-verification"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Request Password Reset",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"player1@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/password-forgot",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "password-forgot"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"replace-with-reset-token\",\n  \"new_password\": \"Turfzone!2027\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/password-reset",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "password-reset"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "auth": {
+        "type": "noauth"
+      },
+      "item": [
+        {
+          "name": "Liveness",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/healthz",
+              "host": ["{{baseUrl}}"],
+              "path": ["healthz"]
+            },
+            "description": "Always returns HTTP 200 while the process is running. Expected body: {\"status\":\"ok\"}."
+          },
+          "response": []
+        },
+        {
+          "name": "Readiness",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ready",
+              "host": ["{{baseUrl}}"],
+              "path": ["ready"]
+            },
+            "description": "Checks database readiness. Returns HTTP 200 when ready or 503 when unavailable."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Documentation",
+      "auth": {
+        "type": "noauth"
+      },
+      "item": [
+        {
+          "name": "Swagger UI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/openapi/",
+              "host": ["{{baseUrl}}"],
+              "path": ["openapi", ""]
+            },
+            "description": "Umbral Swagger UI. OpenAPI routes are disabled automatically when UMBRAL_ENVIRONMENT=Prod."
+          },
+          "response": []
+        },
+        {
+          "name": "OpenAPI Specification",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/openapi/openapi.json",
+              "host": ["{{baseUrl}}"],
+              "path": ["openapi", "openapi.json"]
+            },
+            "description": "Generated OpenAPI 3.0 document for Umbral REST resources. Hand-written workflow routes are not included in this document."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Metadata",
+      "auth": {
+        "type": "noauth"
+      },
+      "item": [
+        {
+          "name": "API Metadata",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/meta",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "meta"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Route Manifest",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/routes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "routes"]
+            },
+            "description": "Informational application route manifest. It currently lists /api/payments/webhook even though that handler is not registered in main.rs."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Discovery",
+      "auth": {
+        "type": "noauth"
+      },
+      "item": [
+        {
+          "name": "Search Fields and Venues",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"city\": \"Nairobi\",\n  \"sport\": \"Football\",\n  \"date\": \"2026-07-13\",\n  \"min_price_minor\": 10000,\n  \"max_price_minor\": 50000,\n  \"latitude\": -1.286389,\n  \"longitude\": 36.817223,\n  \"radius_km\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/discovery/search",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "discovery", "search"]
+            },
+            "description": "Validates and normalizes discovery filters. Price bounds must be supplied together; latitude, longitude, and radius_km must be supplied together."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Availability",
+      "auth": {
+        "type": "noauth"
+      },
+      "item": [
+        {
+          "name": "Calculate Field Availability",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2026-07-13\",\n  \"slot_minutes\": 60,\n  \"opening_windows\": [\n    {\n      \"weekday\": 0,\n      \"opens_at\": \"09:00:00\",\n      \"closes_at\": \"18:00:00\"\n    }\n  ],\n  \"exception\": null,\n  \"active_bookings\": [\n    {\n      \"start_time\": \"10:00:00\",\n      \"end_time\": \"11:00:00\",\n      \"hold_expires_at\": null,\n      \"confirmed\": true\n    }\n  ],\n  \"now\": \"2026-07-13T08:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/fields/availability",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "fields", "availability"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Create Booking Hold",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"field_id\": 1,\n  \"player_id\": {{userId}},\n  \"date\": \"2026-07-13\",\n  \"start_time\": \"09:00:00\",\n  \"end_time\": \"10:00:00\",\n  \"amount_minor\": 50000,\n  \"active_bookings\": [],\n  \"now\": \"2026-07-13T08:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/hold",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings", "hold"]
+            },
+            "description": "Computes a pending hold and pricing split. The current handler does not persist the booking."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Cancellation Quote",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"booking_start\": \"2026-07-13T12:00:00Z\",\n  \"now\": \"2026-07-13T05:00:00Z\",\n  \"amount_minor\": 50000,\n  \"cutoff_hours\": 6,\n  \"refund_percent\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/cancellation-quote",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings", "cancellation-quote"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Initialize M-Pesa Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channel\": \"Mpesa\",\n  \"email\": null,\n  \"phone\": \"0712345678\",\n  \"amount_minor\": 50000,\n  \"reference\": \"booking-1\",\n  \"split_code\": \"SPL_test\",\n  \"metadata\": {\n    \"booking_id\": \"booking-1\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/initialize",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "initialize"]
+            },
+            "description": "Builds the Paystack M-Pesa charge payload. It does not call Paystack."
+          },
+          "response": []
+        },
+        {
+          "name": "Initialize Card Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channel\": \"Card\",\n  \"email\": \"player@example.com\",\n  \"phone\": null,\n  \"amount_minor\": 50000,\n  \"reference\": \"booking-1\",\n  \"split_code\": \"SPL_test\",\n  \"metadata\": {\n    \"booking_id\": \"booking-1\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/initialize",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "initialize"]
+            },
+            "description": "Builds the Paystack card initialization payload. It does not call Paystack."
+          },
+          "response": []
+        },
+        {
+          "name": "Receive Paystack Webhook",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const rawBody = pm.collectionVariables.get(\"webhookPayload\");",
+                  "const secretKey = pm.collectionVariables.get(\"paystackSecretKey\");",
+                  "",
+                  "if (secretKey) {",
+                  "    const CryptoJS = require(\"crypto-js\");",
+                  "    const signature = CryptoJS.HmacSHA512(rawBody, secretKey).toString(CryptoJS.enc.Hex);",
+                  "    pm.collectionVariables.set(\"paystackSignature\", signature);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-paystack-signature",
+                "value": "{{paystackSignature}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{webhookPayload}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/webhook",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "webhook"]
+            },
+            "description": "Provider-authenticated route. Set paystackSecretKey to generate x-paystack-signature over the exact raw body; no Turfzone bearer token is used."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin Verify Paystack Webhook",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const rawBody = pm.collectionVariables.get(\"webhookPayload\");",
+                  "const secretKey = pm.collectionVariables.get(\"paystackSecretKey\");",
+                  "let signature = pm.collectionVariables.get(\"paystackSignature\");",
+                  "",
+                  "if (secretKey) {",
+                  "    const CryptoJS = require(\"crypto-js\");",
+                  "    signature = CryptoJS.HmacSHA512(rawBody, secretKey).toString(CryptoJS.enc.Hex);",
+                  "    pm.collectionVariables.set(\"paystackSignature\", signature);",
+                  "}",
+                  "",
+                  "pm.collectionVariables.set(",
+                  "    \"webhookVerifyBody\",",
+                  "    JSON.stringify({ raw_body: rawBody, signature })",
+                  ");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{webhookVerifyBody}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/webhook/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "webhook", "verify"]
+            },
+            "description": "Superuser-only test wrapper. Set paystackSecretKey to the same PAYSTACK_SECRET_KEY used by the server; the pre-request script computes the HMAC-SHA512 signature."
+          },
+          "response": []
+        },
+        {
+          "name": "Build Refund Payload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transaction_reference\": \"booking-1\",\n  \"amount_minor\": 50000,\n  \"merchant_note\": \"Cancellation refund\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/refund-payload",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "refund-payload"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Wallet",
+      "item": [
+        {
+          "name": "Simulate Wallet Operations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 1,\n  \"starting_balance_minor\": 100000,\n  \"operations\": [\n    {\n      \"kind\": \"BookingDebit\",\n      \"amount_minor\": 25000,\n      \"reference\": \"booking-1\",\n      \"now\": \"2026-07-13T08:00:00Z\"\n    },\n    {\n      \"kind\": \"RefundCredit\",\n      \"amount_minor\": 10000,\n      \"reference\": \"refund-1\",\n      \"now\": \"2026-07-13T09:00:00Z\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/wallet/simulate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "wallet", "simulate"]
+            },
+            "description": "Valid kinds are TopUp, BookingDebit, and RefundCredit. This endpoint does not persist wallet changes."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Manager",
+      "item": [
+        {
+          "name": "Build Manager Subaccount Payload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_name\": \"Nairobi Turf\",\n  \"settlement_bank\": \"test-bank\",\n  \"account_number\": \"123456\",\n  \"mobile_money_number\": null,\n  \"platform_commission_bps\": 1000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/manager/subaccount-payload",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "manager", "subaccount-payload"]
+            },
+            "description": "Supply either settlement_bank plus account_number, or mobile_money_number."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Verify Manager Inputs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"manager_id\": 1,\n  \"verified\": true,\n  \"settlement_phone\": \"0712345678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/managers/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "managers", "verify"]
+            },
+            "description": "Validates and normalizes manager verification inputs. Despite the path, the current handler has no admin authentication and does not persist changes."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Generated REST",
+      "description": "Reusable templates for Umbral's generated REST surface. Set resource to one of: user_profile, manager_profile, staff_membership, venue, amenity, venue_amenity, field, field_image, opening_hours, availability_exception, booking, payment, refund, wallet, wallet_transaction, paystack_subaccount, payout, notification. List and retrieve require a bearer token belonging to auth staff or a superuser. All writes return HTTP 403.",
+      "item": [
+        {
+          "name": "List Resource",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{resource}}/?search=&fields=&include=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{resource}}", ""],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Free-text search across searchable columns."
+                },
+                {
+                  "key": "fields",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Comma-separated sparse fieldset."
+                },
+                {
+                  "key": "include",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Comma-separated foreign-key columns to expand."
+                }
+              ]
+            },
+            "description": "Returns {\"results\":[...],\"count\":N}. Filtering supports field, field__ne, field__gte, field__lte, field__gt, field__lt, field__in, field__contains, field__icontains, field__startswith, and field__isnull where applicable."
+          },
+          "response": []
+        },
+        {
+          "name": "Retrieve Resource",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{resource}}/{{resourceId}}?fields=&include=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{resource}}", "{{resourceId}}"],
+              "query": [
+                {
+                  "key": "fields",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "include",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Resource (Blocked)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{resourcePayload}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{resource}}/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{resource}}", ""]
+            },
+            "description": "Always returns 403 under Turfzone's StaffOrSuperuserReadOnly policy."
+          },
+          "response": []
+        },
+        {
+          "name": "Replace Resource (Blocked)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{resourcePayload}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{resource}}/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{resource}}", "{{resourceId}}"]
+            },
+            "description": "Always returns 403 under Turfzone's StaffOrSuperuserReadOnly policy."
+          },
+          "response": []
+        },
+        {
+          "name": "Partially Update Resource (Blocked)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{resourcePatchPayload}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{resource}}/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{resource}}", "{{resourceId}}"]
+            },
+            "description": "Always returns 403 under Turfzone's StaffOrSuperuserReadOnly policy."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Resource (Blocked)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{resource}}/{{resourceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{resource}}", "{{resourceId}}"]
+            },
+            "description": "Always returns 403 under Turfzone's StaffOrSuperuserReadOnly policy."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
